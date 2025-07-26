@@ -7,13 +7,17 @@ app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL", "sqlite:///data.db"
 )
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 db.init_app(app)
 metrics = PrometheusMetrics(app)
 
-
-@app.before_first_request
-def create_tables():
-    db.create_all()
+# Instead of @app.before_first_request (may not work in test contexts)
+@app.before_request
+def initialize_database():
+    if not os.environ.get("FLASK_SKIP_DB_INIT"):  # Allows skipping in tests if needed
+        with app.app_context():
+            db.create_all()
 
 
 @app.route("/")
@@ -60,4 +64,6 @@ def delete_item(id):
 
 
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
     app.run(host="0.0.0.0", port=5000)
