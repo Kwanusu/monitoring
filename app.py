@@ -12,6 +12,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 metrics = PrometheusMetrics(app)
 
+
 # Instead of @app.before_first_request (may not work in test contexts)
 @app.before_request
 def initialize_database():
