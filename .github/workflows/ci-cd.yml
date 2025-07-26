@@ -48,10 +48,12 @@ jobs:
 
     - name: Replace Image Placeholder in Deployment YAML
       run: |
-        sed -i 's|<IMAGE>|${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g' k8s/deployment.yaml
+        sed -i "s|<IMAGE>|${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" k8s/deployment.yaml
 
-    - name: Deploy to Kubernetes
+    - name: Deploy all Manifests
       run: |
+        kubectl apply -f k8s/pv.yaml
+        kubectl apply -f k8s/pvc.yaml
         kubectl apply -f k8s/configmap.yaml
         kubectl apply -f k8s/secret.yaml
         kubectl apply -f k8s/deployment.yaml
