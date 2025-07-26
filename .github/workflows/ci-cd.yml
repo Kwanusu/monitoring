@@ -1,4 +1,4 @@
-name: Flask CI/CD
+name: Flask CI/CD with Docker and Minikube
 
 on:
   push:
@@ -7,9 +7,10 @@ on:
 
 env:
   IMAGE_NAME: flask-app
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,3 +32,30 @@ jobs:
 
     - name: Run Tests
       run: pytest
+
+    - name: Log in to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+        docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+    - name: Setup kubeconfig
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > ~/.kube/config
+
+    - name: Replace Image Placeholder in Deployment YAML
+      run: |
+        sed -i 's|<IMAGE>|${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g' k8s/deployment.yaml
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/secret.yaml
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+        kubectl apply -f k8s/ingress.yaml
+        kubectl apply -f k8s/hpa.yaml
+        kubectl rollout status deployment/flask-app

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flask-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: flask-app
@@ -13,7 +13,37 @@ spec:
         app: flask-app
     spec:
       containers:
-        - name: flask-container
-          image: your-dockerhub-username/flask-app:latest
-          ports:
-            - containerPort: 5000
+      - env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              key: APP_ENV
+              name: flask-config
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: SECRET_KEY
+              name: flask-secret
+        image: <IMAGE>
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        name: flask-app
+        ports:
+        - containerPort: 5000
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - mountPath: /app/config
+          name: flask-volume
+      volumes:
+      - configMap:
+          name: flask-config
+        name: flask-volume
