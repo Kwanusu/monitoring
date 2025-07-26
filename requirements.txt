@@ -1,0 +1,6 @@
+flask
+gunicorn
+flask_sqlalchemy
+pytest
+flake8
+prometheus_flask_exporter

@@ -1,0 +1,27 @@
+{
+  "title": "Flask‑App Monitoring",
+  "panels": [
+    {
+      "title": "CPU Usage (cores)",
+      "type": "timeseries",
+      "expr": "sum(rate(container_cpu_usage_seconds_total{pod=~\"flask-app-.*\"}[1m])) by (pod)"
+    },
+    {
+      "title": "Memory Usage (MiB)",
+      "type": "timeseries",
+      "expr": "sum(container_memory_usage_bytes{pod=~\"flask-app-.*\"})/1024/1024 by (pod)"
+    },
+    {
+      "title": "Restart Rate (per pod)",
+      "type": "timeseries",
+      "expr": "rate(kube_pod_container_status_restarts_total{pod=~\"flask-app-.*\"}[5m])"
+    },
+    {
+      "title": "HTTP Request Latency (p95)",
+      "type": "stat",
+      "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{app=\"flask\"}[5m])) by (le))"
+    }
+  ],
+  "schemaVersion": 36,
+  "version": 1
+}
