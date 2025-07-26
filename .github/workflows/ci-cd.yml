@@ -20,20 +20,22 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.13.3
+        python-version: 3.13
 
-    - name: Install Dependencies
+    - name: Install Python Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install flake8 pytest
 
     - name: Lint with flake8
       run: flake8 .
-
-    - name: Run Tests
+      
+    - name: Run Pytest
       run: pytest
 
     - name: Log in to Docker Hub
+      if: success()
       run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
     - name: Build and Push Docker Image
@@ -41,16 +43,16 @@ jobs:
         docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
         docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-    - name: Setup kubeconfig
+    - name: Setup Kubeconfig from Secret
       run: |
         mkdir -p ~/.kube
         echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > ~/.kube/config
 
-    - name: Replace Image Placeholder in Deployment YAML
+    - name: Replace Image Tag in Deployment YAML
       run: |
         sed -i "s|<IMAGE>|${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" k8s/deployment.yaml
 
-    - name: Deploy all Manifests
+    - name: Deploy to Minikube/K8s
       run: |
         kubectl apply -f k8s/pv.yaml
         kubectl apply -f k8s/pvc.yaml
