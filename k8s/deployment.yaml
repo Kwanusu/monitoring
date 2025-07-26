@@ -13,27 +13,27 @@ spec:
         app: flask-app
     spec:
       containers:
-      - env:
+      - name: flask-app
+        image: joseph407/flask-app:latest
+        ports:
+        - containerPort: 5000
+        env:
         - name: APP_ENV
           valueFrom:
             configMapKeyRef:
-              key: APP_ENV
               name: flask-config
+              key: APP_ENV
         - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
-              key: SECRET_KEY
               name: flask-secret
-        image: Joseph407/flask-app:latest
+              key: SECRET_KEY
         livenessProbe:
           httpGet:
             path: /health
             port: 5000
           initialDelaySeconds: 5
           periodSeconds: 10
-        name: flask-app
-        ports:
-        - containerPort: 5000
         readinessProbe:
           httpGet:
             path: /ready
@@ -41,9 +41,9 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
         volumeMounts:
-        - mountPath: /app/config
-          name: flask-volume
+        - name: flask-volume
+          mountPath: /app/config
       volumes:
-      - configMap:
+      - name: flask-volume
+        configMap:
           name: flask-config
-        name: flask-volume
