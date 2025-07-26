@@ -4,22 +4,28 @@ from prometheus_flask_exporter import PrometheusMetrics
 import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///data.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "DATABASE_URL", "sqlite:///data.db"
+)
 db.init_app(app)
 metrics = PrometheusMetrics(app)
+
 
 @app.before_first_request
 def create_tables():
     db.create_all()
 
+
 @app.route("/")
 def index():
     return "Welcome to Flask App!"
+
 
 @app.route("/items", methods=["GET"])
 def get_items():
     items = Item.query.all()
     return jsonify([{"id": i.id, "name": i.name} for i in items])
+
 
 @app.route("/items", methods=["POST"])
 def create_item():
@@ -29,10 +35,12 @@ def create_item():
     db.session.commit()
     return jsonify({"id": item.id, "name": item.name}), 201
 
+
 @app.route("/items/<int:id>", methods=["GET"])
 def get_item(id):
     item = Item.query.get_or_404(id)
     return jsonify({"id": item.id, "name": item.name})
+
 
 @app.route("/items/<int:id>", methods=["PUT"])
 def update_item(id):
@@ -42,6 +50,7 @@ def update_item(id):
     db.session.commit()
     return jsonify({"id": item.id, "name": item.name})
 
+
 @app.route("/items/<int:id>", methods=["DELETE"])
 def delete_item(id):
     item = Item.query.get_or_404(id)
@@ -49,5 +58,6 @@ def delete_item(id):
     db.session.commit()
     return jsonify({"message": "Item deleted"})
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)

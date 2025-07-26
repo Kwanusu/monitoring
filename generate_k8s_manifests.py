@@ -27,55 +27,41 @@ deployment = {
                                 "valueFrom": {
                                     "configMapKeyRef": {
                                         "name": "flask-config",
-                                        "key": "APP_ENV"
+                                        "key": "APP_ENV",
                                     }
-                                }
+                                },
                             },
                             {
                                 "name": "SECRET_KEY",
                                 "valueFrom": {
                                     "secretKeyRef": {
                                         "name": "flask-secret",
-                                        "key": "SECRET_KEY"
+                                        "key": "SECRET_KEY",
                                     }
-                                }
-                            }
+                                },
+                            },
                         ],
                         "volumeMounts": [
-                            {
-                                "name": "flask-volume",
-                                "mountPath": "/app/config"
-                            }
+                            {"name": "flask-volume", "mountPath": "/app/config"}
                         ],
                         "livenessProbe": {
-                            "httpGet": {
-                                "path": "/health",
-                                "port": 5000
-                            },
+                            "httpGet": {"path": "/health", "port": 5000},
                             "initialDelaySeconds": 5,
-                            "periodSeconds": 10
+                            "periodSeconds": 10,
                         },
                         "readinessProbe": {
-                            "httpGet": {
-                                "path": "/ready",
-                                "port": 5000
-                            },
+                            "httpGet": {"path": "/ready", "port": 5000},
                             "initialDelaySeconds": 5,
-                            "periodSeconds": 5
-                        }
+                            "periodSeconds": 5,
+                        },
                     }
                 ],
                 "volumes": [
-                    {
-                        "name": "flask-volume",
-                        "configMap": {
-                            "name": "flask-config"
-                        }
-                    }
-                ]
-            }
-        }
-    }
+                    {"name": "flask-volume", "configMap": {"name": "flask-config"}}
+                ],
+            },
+        },
+    },
 }
 
 # ---------------- Service ----------------
@@ -86,8 +72,8 @@ service = {
     "spec": {
         "selector": {"app": "flask-app"},
         "ports": [{"protocol": "TCP", "port": 80, "targetPort": 5000}],
-        "type": "LoadBalancer"
-    }
+        "type": "LoadBalancer",
+    },
 }
 
 # ---------------- Ingress ----------------
@@ -96,9 +82,7 @@ ingress = {
     "kind": "Ingress",
     "metadata": {
         "name": "flask-ingress",
-        "annotations": {
-            "nginx.ingress.kubernetes.io/rewrite-target": "/"
-        }
+        "annotations": {"nginx.ingress.kubernetes.io/rewrite-target": "/"},
     },
     "spec": {
         "rules": [
@@ -112,15 +96,15 @@ ingress = {
                             "backend": {
                                 "service": {
                                     "name": "flask-service",
-                                    "port": {"number": 80}
+                                    "port": {"number": 80},
                                 }
-                            }
+                            },
                         }
                     ]
-                }
+                },
             }
         ]
-    }
+    },
 }
 
 # ---------------- ConfigMap ----------------
@@ -128,23 +112,18 @@ configmap = {
     "apiVersion": "v1",
     "kind": "ConfigMap",
     "metadata": {"name": "flask-config"},
-    "data": {
-        "APP_ENV": "production",
-        "settings.conf": "debug=False\nlog_level=info"
-    }
+    "data": {"APP_ENV": "production", "settings.conf": "debug=False\nlog_level=info"},
 }
 
 # ---------------- Secret ----------------
-secret_data = {
-    "SECRET_KEY": base64.b64encode(b"supersecret123").decode("utf-8")
-}
+secret_data = {"SECRET_KEY": base64.b64encode(b"supersecret123").decode("utf-8")}
 
 secret = {
     "apiVersion": "v1",
     "kind": "Secret",
     "metadata": {"name": "flask-secret"},
     "type": "Opaque",
-    "data": secret_data
+    "data": secret_data,
 }
 
 # ---------------- HPA ----------------
@@ -156,7 +135,7 @@ hpa = {
         "scaleTargetRef": {
             "apiVersion": "apps/v1",
             "kind": "Deployment",
-            "name": "flask-app"
+            "name": "flask-app",
         },
         "minReplicas": 1,
         "maxReplicas": 5,
@@ -165,14 +144,11 @@ hpa = {
                 "type": "Resource",
                 "resource": {
                     "name": "cpu",
-                    "target": {
-                        "type": "Utilization",
-                        "averageUtilization": 50
-                    }
-                }
+                    "target": {"type": "Utilization", "averageUtilization": 50},
+                },
             }
-        ]
-    }
+        ],
+    },
 }
 
 # ---------------- Write to Files ----------------
@@ -182,7 +158,7 @@ manifests = {
     "ingress.yaml": ingress,
     "configmap.yaml": configmap,
     "secret.yaml": secret,
-    "hpa.yaml": hpa
+    "hpa.yaml": hpa,
 }
 
 for filename, content in manifests.items():
