@@ -50,3 +50,22 @@ docker-compose.override.yml
 *~ 
 secrets.*
 config.json
+
+# Python
+__pycache__/
+*.py[cod]
+.env
+
+# Docker
+*.tar
+.dockerignore
+
+# Kubernetes
+*.yaml.backup
+*.secret.yaml
+
+# kubeconfig
+minikube-kubeconfig.yaml
+
+# GitHub Actions
+.github/secrets.env
