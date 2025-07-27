@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env
+venv/
+.venv/
+*.sqlite3
+instance/
+*.log
+
+# VSCode and IDEs
+.vscode/
+.idea/
+*.swp
+
+# macOS and system files
+.DS_Store
+Thumbs.db
+
+# Docker
+*.tar
+*.img
+
+# Kubernetes secrets
+k8s/secret.yaml
+
+# GitHub Actions or CI/CD temp files
+*.coverage
+.coverage.*
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.crash/
+terraform.tfvars
+
+# Docker Compose override (if using)
+docker-compose.override.yml
+
+# Log files and temp data
+*.log
+*.tmp
+*.bak
+
+# Backup or sensitive files
+*~ 
+secrets.*
+config.json

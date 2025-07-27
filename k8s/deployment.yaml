@@ -12,9 +12,9 @@ spec:
       labels:
         app: flask-app
     spec:
-      containers:
-      - name: flask-app
-        image: joseph407/flask-app:latest
+        containers:
+        - name: flask-app
+          image: <IMAGE>  # <-- GitHub Actions will replace this
         ports:
         - containerPort: 5000
         env:
