@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: flask-app-alerts
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: flask-app.rules
+      rules:
+        - alert: HighPodCPUUsage
+          expr: rate(container_cpu_usage_seconds_total{container!="POD"}[2m]) > 0.5
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage detected"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is using >50% CPU for 2 minutes."

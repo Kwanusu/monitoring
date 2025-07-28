@@ -1,0 +1,14 @@
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelector:
+      matchLabels:
+        team: devops
+    ruleSelector:
+      matchLabels:
+        release: prometheus
+
+alertmanager:
+  enabled: true
+
+grafana:
+  enabled: false

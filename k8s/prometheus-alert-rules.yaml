@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: flask-alert-rules
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+  - name: flask-app-rules
+    rules:
+    - alert: HighErrorRate
+      expr: rate(http_requests_total{status=~"5.."}[1m]) > 1
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High error rate detected"
+        description: "More than 1 error per second over the last minute."

@@ -159,6 +159,46 @@ jobs:
         run: |
           az aks get-credentials --resource-group devops_deploy_test --name myTestCluster --overwrite-existing
 
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+      - name: Add Prometheus and Grafana Helm Repos
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+
+      - name: Install Prometheus Stack
+        run: |
+          helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
+            --namespace monitoring --create-namespace \
+            --values k8s/prometheus-values.yaml
+
+      - name: Create Grafana Dashboard ConfigMap
+        run: |
+          kubectl create configmap grafana-dashboard \
+            --from-file=k8s/grafana-dashboard.json \
+            -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create Grafana Alerts ConfigMap
+        run: |
+          kubectl create configmap grafana-alerts \
+            --from-file=k8s/grafana-alerts.yaml \
+            -n monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Install Grafana with Persistence and Dashboards
+        run: |
+          helm upgrade --install grafana grafana/grafana \
+            --namespace monitoring \
+            --set adminPassword='admin' \
+            --set service.type=LoadBalancer \
+            --set persistence.enabled=true \
+            --set persistence.size=1Gi \
+            --set dashboardsProvider.enabled=true \
+            --set dashboardsProvider.configMaps[0].name=grafana-dashboard \
+            --set dashboardsProvider.configMaps[0].default=true
+
       - name: Update Deployment Image
         run: |
           sed -i "s|<IMAGE>|${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" k8s/deployment.yaml
