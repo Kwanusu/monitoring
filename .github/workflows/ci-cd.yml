@@ -1,4 +1,108 @@
-name: Flask CI/CD for Minikube and AWS EKS
+# name: Flask CI/CD for Minikube and AWS EKS
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# env:
+#   IMAGE_NAME: flask-app
+#   IMAGE_TAG: ${{ github.sha }}
+
+# jobs:
+#   build-and-push:
+#     name: Build and Push Docker Image
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v3
+
+#       - name: Set up Python
+#         uses: actions/setup-python@v4
+#         with:
+#           python-version: 3.13
+
+#       - name: Install Dependencies
+#         run: |
+#           pip install -r requirements.txt
+#           pip install flake8 pytest
+
+#       - name: Lint and Test
+#         run: |
+#           flake8 .
+#           pytest
+
+#       - name: Docker Login
+#         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+#       - name: Build and Push Docker Image
+#         run: |
+#           docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+#           docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+#   deploy-minikube:
+#     needs: build-and-push
+#     runs-on: ubuntu-latest
+#     if: github.event_name == 'push'
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v3
+
+#       - name: Set up Kubeconfig for Minikube
+#         run: |
+#           mkdir -p ~/.kube
+#           echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > ~/.kube/config
+
+#       - name: Update Image in K8s YAML
+#         run: sed -i "s|<IMAGE>|${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" k8s/deployment.yaml
+
+#       - name: Create Secret in Minikube
+#         run: |
+#           kubectl delete secret flask-secret --ignore-not-found
+#           kubectl create secret generic flask-secret --from-literal=SECRET_KEY="${{ secrets.FLASK_SECRET_KEY }}"
+
+#       - name: Deploy to Minikube
+#         run: |
+#           kubectl apply -f k8s/pv.yaml
+#           kubectl apply -f k8s/pvc.yaml
+#           kubectl apply -f k8s/configmap.yaml
+#           kubectl apply -f k8s/deployment.yaml
+#           kubectl apply -f k8s/service.yaml
+#           kubectl apply -f k8s/ingress.yaml
+#           kubectl apply -f k8s/hpa.yaml
+#           kubectl rollout status deployment/flask-app
+
+#   deploy-eks:
+#     needs: build-and-push
+#     runs-on: ubuntu-latest
+#     if: github.event_name == 'push'
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v3
+
+#       - name: Set up Kubeconfig for AWS EKS
+#         run: |
+#           mkdir -p ~/.kube
+#           echo "${{ secrets.EKS_KUBECONFIG_B64 }}" | base64 --decode > ~/.kube/config
+
+#       - name: Replace Image Tag in Deployment YAML
+#         run: sed -i "s|<IMAGE>|${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" k8s/deployment.yaml
+
+#       - name: Create Secret in EKS
+#         run: |
+#           kubectl delete secret flask-secret --ignore-not-found
+#           kubectl create secret generic flask-secret --from-literal=SECRET_KEY="${{ secrets.FLASK_SECRET_KEY }}"
+
+#       - name: Deploy to AWS EKS
+#         run: |
+#           kubectl apply -f k8s/configmap.yaml
+#           kubectl apply -f k8s/deployment.yaml
+#           kubectl apply -f k8s/service.yaml
+#           kubectl apply -f k8s/ingress.yaml
+#           kubectl apply -f k8s/hpa.yaml
+#           kubectl rollout status deployment/flask-app
+
+name: Flask CI/CD for Minikube and Azure AKS
 
 on:
   push:
@@ -11,7 +115,6 @@ env:
 
 jobs:
   build-and-push:
-    name: Build and Push Docker Image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -20,7 +123,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.13
+          python-version: 3.11
 
       - name: Install Dependencies
         run: |
@@ -40,60 +143,32 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
           docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-  deploy-minikube:
+  deploy-aks:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Kubeconfig for Minikube
+      - name: Set up Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set kubectl context
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > ~/.kube/config
+          az aks get-credentials --resource-group devops_deploy_test --name myTestCluster --overwrite-existing
 
-      - name: Update Image in K8s YAML
-        run: sed -i "s|<IMAGE>|${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" k8s/deployment.yaml
-
-      - name: Create Secret in Minikube
+      - name: Update Deployment Image
         run: |
-          kubectl delete secret flask-secret --ignore-not-found
-          kubectl create secret generic flask-secret --from-literal=SECRET_KEY="${{ secrets.FLASK_SECRET_KEY }}"
+          sed -i "s|<IMAGE>|${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" k8s/deployment.yaml
 
-      - name: Deploy to Minikube
-        run: |
-          kubectl apply -f k8s/pv.yaml
-          kubectl apply -f k8s/pvc.yaml
-          kubectl apply -f k8s/configmap.yaml
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
-          kubectl apply -f k8s/ingress.yaml
-          kubectl apply -f k8s/hpa.yaml
-          kubectl rollout status deployment/flask-app
-
-  deploy-eks:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Set up Kubeconfig for AWS EKS
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.EKS_KUBECONFIG_B64 }}" | base64 --decode > ~/.kube/config
-
-      - name: Replace Image Tag in Deployment YAML
-        run: sed -i "s|<IMAGE>|${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" k8s/deployment.yaml
-
-      - name: Create Secret in EKS
+      - name: Create Secret
         run: |
           kubectl delete secret flask-secret --ignore-not-found
           kubectl create secret generic flask-secret --from-literal=SECRET_KEY="${{ secrets.FLASK_SECRET_KEY }}"
 
-      - name: Deploy to AWS EKS
+      - name: Apply Kubernetes Resources
         run: |
           kubectl apply -f k8s/configmap.yaml
           kubectl apply -f k8s/deployment.yaml
